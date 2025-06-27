@@ -1,4 +1,4 @@
-name: Deploy via SSH to ScalaHosting
+name: SSH Deploy to VPS
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup SSH
+      - name: Setup SSH connection
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
