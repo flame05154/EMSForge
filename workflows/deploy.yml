@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,11 +23,27 @@ jobs:
 
       - name: Deploy via SSH to ScalaHosting VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ~/emsforge
-            git pull origin main
-            npm install
-            npm run build
-            rm -rf ~/public_html/*
-            cp -r build/* ~/public_html/
+          echo "🔐 Starting SSH deployment to VPS..."
+          ssh -vvv -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+            echo "🔍 Logged into VPS"
+            set -e
+            echo "📂 Navigating to project directory..."
+            cd ~/emsforge || { echo '❌ Failed to cd into ~/emsforge'; exit 1; }
+
+            echo "📥 Pulling latest changes from Git..."
+            git pull origin main || { echo '❌ Git pull failed'; exit 1; }
+
+            echo "📦 Installing dependencies..."
+            npm install || { echo '❌ npm install failed'; exit 1; }
+
+            echo "🔧 Building frontend..."
+            npm run build || { echo '❌ npm run build failed'; exit 1; }
+
+            echo "🧹 Clearing old files..."
+            rm -rf ~/public_html/* || { echo '❌ Failed to clear public_html'; exit 1; }
+
+            echo "🚀 Copying new build to public_html..."
+            cp -r build/* ~/public_html/ || { echo '❌ Failed to copy build to public_html'; exit 1; }
+
+            echo "✅ Deployment completed successfully!"
           EOF
