@@ -1,49 +1,14 @@
-name: SSH Deploy to VPS
-
-on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy via SSH to ScalaHosting VPS
-        run: |
-          echo "🔐 Starting SSH deployment to VPS..."
-          ssh -vvv -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            echo "🔍 Logged into VPS"
-            set -e
-            echo "📂 Navigating to project directory..."
-            cd ~/emsforge || { echo '❌ Failed to cd into ~/emsforge'; exit 1; }
-
-            echo "📥 Pulling latest changes from Git..."
-            git pull origin main || { echo '❌ Git pull failed'; exit 1; }
-
-            echo "📦 Installing dependencies..."
-            npm install || { echo '❌ npm install failed'; exit 1; }
-
-            echo "🔧 Building frontend..."
-            npm run build || { echo '❌ npm run build failed'; exit 1; }
-
-            echo "🧹 Clearing old files..."
-            rm -rf ~/public_html/* || { echo '❌ Failed to clear public_html'; exit 1; }
-
-            echo "🚀 Copying new build to public_html..."
-            cp -r build/* ~/public_html/ || { echo '❌ Failed to copy build to public_html'; exit 1; }
-
-            echo "✅ Deployment completed successfully!"
-          EOF
+- name: Push changes
+  run: git push origin HEAD:deploy
+  env:
+    GIT_AUTHOR_NAME: github-actions
+    GIT_AUTHOR_EMAIL: github-actions@github.com
+    GIT_COMMITTER_NAME: github-actions
+    GIT_COMMITTER_EMAIL: github-actions@github.com
+    # Use your secret name here
+    GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  # Use the token for authentication
+  # Example for setting up remote with token
+  run: |
+    git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/flame05154/EMSForge.git
+    git push origin HEAD:deploy
