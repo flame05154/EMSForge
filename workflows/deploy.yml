@@ -1,4 +1,4 @@
-name: 🚀 Deploy to ScalaHosting via FTP
+name: Build and Push to Deploy Branch
 
 on:
   push:
@@ -6,17 +6,37 @@ on:
       - main
 
 jobs:
-  ftp-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Upload files to ScalaHosting
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FTP_TARGET_FOLDER }}/
-          local-dir: ./dist/
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy build to 'deploy' branch
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          # Save deploy branch temporarily
+          mv build build-temp
+
+          # Orphan checkout to deploy
+          git checkout --orphan deploy
+
+          # Clear everything
+          git reset --hard
+          rm -rf *
+
+          # Move build files back
+          mv build-temp/* .
+
+          # Commit and push
+          git add .
+          git commit -m "Deploy from GitHub Actions at $(date)"
+          git push origin deploy --force
